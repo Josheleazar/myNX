@@ -134,7 +134,7 @@ Use that as your grafana password with the username "admin".
 ## Contact Information
 Feel free to reach out if you have any questions or need further assistance:
 
-Your Name: Josh Eleazar
+Name: Josh Eleazar
 
 Email: joelson30.j@gmail.com
 
