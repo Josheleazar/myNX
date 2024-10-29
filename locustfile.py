@@ -7,3 +7,4 @@ class NginxUser(HttpUser):
     def access_nginx(self):
         self.client.get("/")
 
+# Use this file with locust server to simulate web traffic on the nginx server.
