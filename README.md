@@ -46,11 +46,13 @@ Those three commands will create a VPC, GKE cluster, IAM roles, and networking c
 
 Once the GKE cluster is provisioned, configure kubectl to access the cluster.
 
-`gcloud container clusters get-credentials k8s-cluster --zone us-central1-a --project your-gcp-project-id`
+`gcloud container clusters get-credentials mynx-cluster --zone me-west1-a --project my-nx-438310`
 
-`gcloud container clusters get-credentials k8s-cluster --region us-central1 --project your-gcp-project-id`
+`gcloud container clusters get-credentials mynx-cluster --region me-west1 --project my-nx-438310`
 
 Use the first commad incase you've provisioned a zonal cluster, and the second for a regional cluster.
+
+Replace the cluster name, region/zone, and project ID with your own.
 
 Additionally an [Authorization Plugin](https://cloud.google.com/blog/products/containers-kubernetes/kubectl-auth-changes-in-gke) may be required at initial setup.
 
@@ -59,7 +61,7 @@ Additionally an [Authorization Plugin](https://cloud.google.com/blog/products/co
 Since we're using terraform, cluster objects are provisioned using k8s resource scripts in HCL.
 Therefore the `terraform apply` command will have to be run again to create the cluster objects using the new connection we created in the previous step.
 
-**Step 6: Install Prometheus and Grafana using Helm**
+**Step 6: Install Prometheus and Grafana Mimir using Helm**
 
 Run the following commands.
 
@@ -69,32 +71,73 @@ Run the following commands.
 
 `helm install prometheus prometheus-community/prometheus`
 
-`helm install grafana grafana/grafana`
+`helm install mymimir grafana/mimir-distributed -f mimir-values.yaml`
+
+Take note of the remote-write endpoint for in-cluster access shown in the output from the mimir installation.
+
+**Grafana Cloud Setup**
+
+This is a simple process, similar to registering for any other web-based service.
+
+1. Create a Grafana Cloud Account
+    
+    * Visit [Grafana Cloud](https://grafana.com/) and sign up for an account.
+
+    * Follow the prompts to configure your organization and instance.
+2. Import Prebuilt Dashboards
+
+    * Go to Dashboards in the Grafana UI and click Import.
+    * Enter the Dashboard ID from Grafana’s dashboard library. 
+        * For example, to import a Kubernetes monitoring dashboard, use ID 315 or any relevant dashboard IDs based on your needs.
+    * If you have a local copy of the dashboard JSON files, you can upload those as well.
+        * Navigate to Dashboards > Import, then upload the JSON file directly from your local repo.
+3. Configure Grafana Alerting
+    * Navigate to Alerting > Contact Points.
+        * Set up an email contact point:
+        Add your email address or any other alerting service like Slack or PagerDuty.
+    * Go to Alerting > Alert Rules and set up custom rules to monitor your dashboards:
+        * Define the alert conditions (e.g., CPU usage > 80% for 5 minutes).
+        * Attach your previously configured contact point to be notified when the rule is triggered.
+4. Testing Alerts
+
+    Once the alerts are set up, simulate a load on your system to verify if the alerting system triggers appropriately. Emails or notifications will be sent to the configured contact point when a rule condition is met.
+
 
 **Step 7: Configure Horizontal Pod Autoscaler (HPA)**
 
-Run the following command from within the Google Cloud SDK shell.
+Run the following command from within the Google Cloud SDK shell from the directory containing the repository files.
 
-`Step 7: Configure Horizontal Pod Autoscaler (HPA)`
+`Kubectl apply -f hpa.yaml`
 
 
-**Step 8: Access Prometheus and Grafana**
+**Step 8: Access Prometheus**
 
-Helm will initially install prometheus and grafana as ClusterIP services.
-Meaning they will only be accessible from inside the cluster.
-To expose them to web traffic, run the these.
-
-`kubectl expose service grafana --type=LoadBalancer --target-port=3000 --name=grafana-ext`
+Helm will initially install prometheus as a ClusterIP service.
+Meaning it will only be accessible from inside the cluster.
+To expose it to web traffic, run this.
 
 `kubectl expose service prometheus-server --type=LoadBalancer --target-port=9090 --name=prometheus-server-ext`
 
+**Step 9: Configure Prometheus for Grafana Mimir**
+
+Run, 
+
+`kubectl edit service mymimir-nginx`
+
+Change the type to LoadBalancer for external internet access, save and close the output file.
+
+`kubectl edit configmap prometheus-server`
+
+Add the following code as an object of the 'scrape_configs' attribute.
+Use the remote-write endpoint given earlier.
+
+```
+remote_write:
+      - url: http://<in-cluster-endpoint>/api/v1/push
+```
+
 `Kubectl get svc`
 outputs a table containing an external-ip column that shows the addresses through which all the services can be externally accessed. 
-
-Finally,
-`kubectl get secret --namespace default grafana -o yaml` 
-run the encoded string admin-password exposed by the output from this command through any base64 decoder software or plugin.
-Use that as your grafana password with the username "admin".
 
 ### Terraform Files
 
@@ -119,7 +162,11 @@ Use that as your grafana password with the username "admin".
 
 - **Cluster Provisioning Realization:** I initially thought enabling GKE would be enough, but I had to provision a VPC, subnets, IAM roles, and other services to get the cluster running.
 - **Terraform Integration:** Connecting Terraform to GKE was tricky. I had to add a Kubernetes provider block and install the gcloud CLI authorization plugin for proper connectivity.
-- **Grafana Setup:** Setting up Grafana dashboards was a nightmare due to my unfamiliarity with PromQL. I eventually found a prebuilt K8s dashboard that suited my needs.
+- **Grafana Setup:** 
+    
+    - Setting up Grafana dashboards was a nightmare due to my unfamiliarity with PromQL. I eventually found a prebuilt K8s dashboard that suited my needs.
+
+    - Additionally, installing Grafana on my GKE cluster with Helm was easy, but advanced features required complex manual configuration. While self-hosted Grafana works for this small project, it's not ideal for long-term scalability due to maintenance overhead. I switched to Grafana Cloud for simplified management and better scalability without the hassle of ongoing configuration.
 
 ## Future Improvements
 
@@ -130,6 +177,11 @@ Use that as your grafana password with the username "admin".
 - **CI/CD Pipeline**
 
     Automate the infrastructure deployment and application updates via a CI/CD pipeline (e.g., GitHub Actions or Jenkins).
+
+## Further Project Documentation
+- [Grafana Dashboards](Dashboards.md)
+- [Infrastructure Architecture](Architecture.md)
+
 
 ## Contact Information
 Feel free to reach out if you have any questions or need further assistance:
