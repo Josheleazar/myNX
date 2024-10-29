@@ -1,7 +1,7 @@
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: mnx-hpa
+  name: mynx-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -9,4 +9,4 @@ spec:
     name: mynx-deployment
   minReplicas: 2
   maxReplicas: 10
-  targetCPUUtilizationPercentage: 50
+  targetCPUUtilizationPercentage: 10

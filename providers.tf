@@ -1,5 +1,5 @@
 provider "google" {
-  credentials = file("/J4D_AC_Key.json")
+  credentials = file("/J4D_AC_Key.json") #Path to your JSON key file, generated from your Google Cloud Console.
   project     = "my-nx-438310"
   region      = "me-west1"
 }

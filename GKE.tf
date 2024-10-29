@@ -1,7 +1,7 @@
 resource "google_container_cluster" "gke_cluster" {
   name     = "mynx-cluster"
   # Provision a regional cluster for high availability and increased fault taulerance.
-  location = "me-west1" 
+  location = "me-west1-a" 
   network  = google_compute_network.vpc_network.id
   subnetwork = google_compute_subnetwork.subnet.name
 
@@ -19,14 +19,14 @@ resource "google_container_cluster" "gke_cluster" {
 resource "google_container_node_pool" "srvr_nodes" {
    node_config {
         preemptible  = false
-        machine_type = "e2-medium"
+        machine_type = "n2-standard-4"
         
     # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
         service_account = data.google_service_account.gke_service_account.email
         oauth_scopes    = ["https://www.googleapis.com/auth/cloud-platform"]
     }
     name       = "mynx-pool"
-    location   = "me-west1"
+    location   = "me-west1-a"
     cluster    = google_container_cluster.gke_cluster.id
     initial_node_count = 1
    max_pods_per_node = 200
@@ -34,5 +34,12 @@ resource "google_container_node_pool" "srvr_nodes" {
     autoscaling {
     min_node_count = 1
     max_node_count = 5  # The maximum node count
+  }
+
+  # Management settings
+  management {
+    auto_repair  = true  # Automatically repair unhealthy nodes
+    auto_upgrade = true  # Automatically upgrade nodes to newer versions
+
   }
 }
