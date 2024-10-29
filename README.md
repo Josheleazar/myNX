@@ -179,8 +179,8 @@ outputs a table containing an external-ip column that shows the addresses throug
     Automate the infrastructure deployment and application updates via a CI/CD pipeline (e.g., GitHub Actions or Jenkins).
 
 ## Further Project Documentation
-- [Grafana Dashboards](Dashboards.md)
-- [Infrastructure Architecture](Architecture.md)
+- [Grafana Dashboards](dashboards.md)
+- [Infrastructure Architecture](architecture.md)
 
 
 ## Contact Information
